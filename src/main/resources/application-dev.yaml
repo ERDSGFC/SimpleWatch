@@ -1,0 +1,81 @@
+server:
+  port: 8080
+  tomcat:
+    uri-encoding: UTF-8 #   等待队列长度
+    accept-count: 200 #   最大链接数量
+    max-connections:  1000
+    threads:
+      min-spare: 10 #     核心线程数量
+      max: 20 #     最大线程数量
+    connection-timeout: 30000 #   链接超时时间
+  shutdown: graceful
+spring:
+  banner:
+    charset: UTF-8
+    location: banner.txt
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB # 单个文件上传大小
+      max-request-size: 50MB
+      file-size-threshold: 1MB
+#  main:
+#    lazy-initialization: true # 是否延迟加载Bean
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.126.134:3306/qin?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: asdfjj
+    hikari:
+      auto-commit: true # 事务自动提交 默认 true
+      minimum-idle: 10 # 空闲最小连接数
+      #      idle-timeout: 600000 # 连接池中允许闲置的最长时间 10分钟
+      maximum-pool-size: 100 # 最大连接数
+  #      max-lifetime: 1800000 # 一个连接生命时长(毫秒) ,超时而没被使用则被释放-默认值: 30分钟
+  #      connection-timeout: 80000 # 连接超时时间
+  #      validation-timeout: 5000
+  cache:
+    type: redis
+    redis:
+      key-prefix: simple_watch
+  data:
+    redis:
+      url: redis://192.168.126.134:6379
+#      password:
+      database: 0
+  jackson:
+    date-format: yyyy-MM-dd HH:mm
+#    default-property-inclusion: non_null # 不为空的属性才被序列化，详情看JsonInclude.Include
+    locale: zh_CN
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false # 禁止将 java.util.Date, Calendar 序列化为数字(时间戳)
+      fail-on-empty-beans: false # 序列化时，对象为 null，是否抛异常
+    deserialization:
+      fail-on-unknown-properties: false  # 反序列化时，json 中包含 pojo 不存在属性时，是否抛异常
+    parser:
+      allow-single-quotes: true # 允许单引号
+logging:
+  config: classpath:log/log4j2.xml # 指定日志配置文件
+  level:
+    root: info
+#    com.qin.dao: info
+
+mybatis:
+  type-aliases-package: com.qin.pojo.po # Persistent Object 持久对象，和数据库表一一对应数据库
+  mapper-locations: classpath:mybatis/mapper/*.xml  #注意：一定要对应mapper映射xml文件的所在路径
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+#    log-impl: org.apache.ibatis.logging.log4j2.
+#auth:
+#  jwt:
+#    header: Authorization
+#    token-start-with: Bearer
+#    token-start-length: 7
+#    expireJwt: 604800
+#    secretKey: SUtJV1VKISoqJnd3cSNAIT0tKXBhc3N3b3JkJSRSVEZHSFZCc2Z3MjJmczQ0Mjloc2YhQEAqKys=
+
+
+

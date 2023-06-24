@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: simple_watch
+  profiles:
+    active:
+      - dev

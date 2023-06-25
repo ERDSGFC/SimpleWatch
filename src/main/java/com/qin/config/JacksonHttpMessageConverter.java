@@ -14,98 +14,42 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 @SuppressWarnings("all")
 public class JacksonHttpMessageConverter extends MappingJackson2HttpMessageConverter {
-
     /**
-     * 处理数组类型的null值
+     * 处理这个nullLocalDateTime
      */
-    public static class NullArrayJsonSerializer extends JsonSerializer<Object> {
-
-
+    public static class NullLocalDateTimeJsonSerializer extends JsonSerializer<LocalDateTime> {
         @Override
-        public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value == null) {
-                gen.writeStartArray();
-                gen.writeEndArray();
-            }
+        public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (Objects.isNull(value)) gen.writeString("0000-00-00 00:00:00");
         }
     }
-
-
-    /**
-     * 处理字符串等类型的null值
-     */
-    public static class  NullStringJsonSerializer extends JsonSerializer<Object> {
-
-        @Override
-        public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
-            jsonGenerator.writeString("");
-        }
-    }
-
-    /**
-     * 处理字符串等类型的null值
-     */
-    public static class NullNumberJsonSerializer extends JsonSerializer<Object> {
-
-        @Override
-        public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
-            jsonGenerator.writeNumber(0);
-        }
-    }
-
-    /**
-     * 处理字符串等类型的null值
-     */
-    public static class NullBooleanJsonSerializer extends JsonSerializer<Object> {
-
-        @Override
-        public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
-            jsonGenerator.writeBoolean(false);
-        }
-    }
-
-    public static class NullLocalDateTimeJsonSerializer extends JsonSerializer<Object> {
-
-        @Override
-        public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeString("");
-        }
-    }
-
     public static class NullObjectJsonSerializer extends JsonSerializer<Object> {
-
         @Override
         public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value == null) {
-                gen.writeStartObject();
-                gen.writeEndObject();
-            }
+            if (Objects.isNull(value)) {gen.writeStartObject();gen.writeEndObject();}
         }
     }
-
-
     public static class MyBeanSerializerModifier extends BeanSerializerModifier {
-
-
         @Override
         public List<BeanPropertyWriter> changeProperties(SerializationConfig config, BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
             //循环所有的beanPropertyWriter
             for (Object beanProperty : beanProperties) {
-                BeanPropertyWriter writer = (BeanPropertyWriter) beanProperty;
+//                BeanPropertyWriter writer = (BeanPropertyWriter) beanProperty;
                 //判断字段的类型，如果是array，list，set则注册nullSerializer
-                if (isArrayType(writer)) {
-                    //给writer注册一个自己的nullSerializer
-                    writer.assignNullSerializer(new NullArrayJsonSerializer());
-                } else if (isNumberType(writer)) {
-                    writer.assignNullSerializer(new NullNumberJsonSerializer());
-                } else if (isBooleanType(writer)) {
-                    writer.assignNullSerializer(new NullBooleanJsonSerializer());
-                } else if (isStringType(writer)) {
-                    writer.assignNullSerializer(new NullStringJsonSerializer());
-                }
+//                if (isArrayType(writer)) {
+//                    //给writer注册一个自己的nullSerializer
+//                    writer.assignNullSerializer(new NullArrayJsonSerializer());
+//                } else if (isNumberType(writer)) {
+//                    writer.assignNullSerializer(new NullNumberJsonSerializer());
+//                } else if (isBooleanType(writer)) {
+//                    writer.assignNullSerializer(new NullBooleanJsonSerializer());
+//                } else if (isStringType(writer)) {
+//                    writer.assignNullSerializer(new NullStringJsonSerializer());
+//                }
 //                else if (isLocalDateTimeType(writer)) {
 //                    writer.assignNullSerializer(new NullLocalDateTimeJsonSerializer());
 //                }

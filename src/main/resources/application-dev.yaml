@@ -46,7 +46,7 @@ spring:
       database: 0
   jackson:
     date-format: yyyy-MM-dd HH:mm
-#    default-property-inclusion: non_null # 不为空的属性才被序列化，详情看JsonInclude.Include
+#    default-property-inclusion:  # 不为空的属性才被序列化，详情看JsonInclude.Include
     locale: zh_CN
     time-zone: GMT+8
     serialization:
@@ -56,6 +56,13 @@ spring:
       fail-on-unknown-properties: false  # 反序列化时，json 中包含 pojo 不存在属性时，是否抛异常
     parser:
       allow-single-quotes: true # 允许单引号
+    mapper:
+      use-annotations: true
+
+
+
+#    mapper:
+
 logging:
   config: classpath:log/log4j2.xml # 指定日志配置文件
   level:

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qin.dao.UserMapper;
 import com.qin.pojo.po.UserPO;
+import lombok.Builder;
+import lombok.ToString;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 
 @SpringBootTest
 class SimpleWatchApplicationTests {
@@ -28,27 +31,15 @@ class SimpleWatchApplicationTests {
     ObjectMapper objectMapper;
     @Test
     void jsonTset() throws JsonProcessingException {
+//        objectMapper.getS;
+//        objectMapper.getSerializerFactory().withSerializerModifier();
+//        JsonTest test = JsonTest.builder().id(1).a(new int[]{1}).build();
+        var test = new JsonTest();
+        test.setTime(LocalDateTime.now());
+//        test.setMap(new HashMap<>());
+        System.out.println(test.toString());
 
-        final UserPO user = new UserPO();
-        user.setId(123456788);
-        user.setDeletedTime(LocalDateTime.now());
-
-        System.out.println(this.objectMapper.writeValueAsString(user));
+        System.out.println(this.objectMapper.writeValueAsString(test));
     }
-
-    @Autowired
-    StringRedisTemplate stringRedisTemplate;
-
-    @Autowired
-    public RedisTemplate redisTemplate;
-
-    @Test
-    void redisTest() {
-        final StringRedisTemplate re = new StringRedisTemplate();
-
-        this.stringRedisTemplate.opsForValue().set("11", "33");
-        this.redisTemplate.opsForValue().set("test", new UserPO());
-
-    }
-
 }
+

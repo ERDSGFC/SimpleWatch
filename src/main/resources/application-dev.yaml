@@ -59,23 +59,26 @@ spring:
     mapper:
       use-annotations: true
 
-
-
 #    mapper:
 
 logging:
   config: classpath:log/log4j2.xml # 指定日志配置文件
   level:
     root: info
-#    com.qin.dao: info
+    com.qin.dao: debug
 
 mybatis:
   type-aliases-package: com.qin.pojo.po # Persistent Object 持久对象，和数据库表一一对应数据库
   mapper-locations: classpath:mybatis/mapper/*.xml  #注意：一定要对应mapper映射xml文件的所在路径
   configuration:
-    map-underscore-to-camel-case: true
-    cache-enabled: true
-#    log-impl: org.apache.ibatis.logging.log4j2.
+    map-underscore-to-camel-case: true # 开启驼峰转换
+    cache-enabled: true # 开启缓存
+    log-impl: org.apache.ibatis.logging.log4j2.Log4j2Impl
+#    local-cache-scope: statement # 禁用一级缓存, 一般都不适用
+    lazy-loading-enabled: true
+#  executor-type: batch
+
+#  type-handlers-package:
 #auth:
 #  jwt:
 #    header: Authorization

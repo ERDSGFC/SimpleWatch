@@ -3,6 +3,7 @@ package com.qin.simplewatch;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.qin.pojo.po.UserPO;
+import com.rabbitmq.client.impl.VariableLinkedBlockingQueue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -85,5 +86,16 @@ public class RedisTest {
 //        stringRedisTemplate.boundHashOps("test").pua
 //        String list = stringRedisTemplate.opsForList().index("list", 0);
 //        System.out.println(list);
+    }
+    @Test
+    public void hashTest() throws JsonProcessingException {
+        HashMap map = new HashMap<>();
+        map.put("arrayList", null);
+        map.put("arrayListStr", new ArrayList<String>());
+        map.put("arrayListNO", Arrays.asList(1L,2L,222222L));
+        map.put("arrayListStrNO", Arrays.asList("wo", "tt", "heiehi"));
+        map.put("arrayListIntNO", Arrays.asList(1,11,111,111));
+        redisTemplate.boundHashOps("str_map").putAll(map);
+        System.out.println(objectMapper.writeValueAsString(map));
     }
 }

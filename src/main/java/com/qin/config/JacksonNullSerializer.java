@@ -3,28 +3,62 @@ package com.qin.config;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.TypeVariable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Map;
 
+/**
+ * @author qinhanhan
+ */
 @Log4j2
 @Component
 public class JacksonNullSerializer extends JsonSerializer<Object> {
 
     @Override
     public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        // 获取到该值的类型Class
         Object currentValue = gen.getOutputContext().getCurrentValue();
-        Class<?> aClass = currentValue.getClass();
         String currentName = gen.getOutputContext().getCurrentName();
+        Class<?> aClass = currentValue.getClass();
+        Class<?> valueClass;
+        if (isMapType(aClass) || isArrayType(aClass)) {
+            gen.writeNull();
+            return;
+        }
+        valueClass = getValueClass(aClass, currentName);
+        if (valueClass != null) {
+            if (isStringType(valueClass)) {
+                gen.writeString("");
+            } else if (isNumberType(valueClass)) {
+                gen.writeNumber(0);
+            } else if (isLocalDateTimeType(valueClass)) {
+                gen.writeString("0000-00-00 00:00:00");
+            } else if (isBooleanType(valueClass)) {
+                gen.writeBoolean(false);
+            } else if (isArrayType(valueClass)) {
+                gen.writeStartArray();gen.writeEndArray();
+            } else {
+                gen.writeStartObject();gen.writeEndObject();
+            }
+        } else {
+            gen.writeNull();
+        }
+    }
+
+    /**
+     * 获取到当前序列化字段的类型的反射
+     * @return Class<?>
+     */
+    private Class<?> getValueClass(Class<?> aClass, String currentName) {
         Field[] fields = aClass.getDeclaredFields();
         Class<?> valueClass = null;
         int i = 0, length = fields.length;
@@ -42,24 +76,7 @@ public class JacksonNullSerializer extends JsonSerializer<Object> {
                 length = fields.length;
             }
         }
-        if (valueClass != null) {
-            if (isStringType(valueClass)) {
-                gen.writeString("");
-            } else if (isNumberType(valueClass)) {
-                gen.writeNumber(0);
-            } else if (isLocalDateTimeType(valueClass)) {
-                gen.writeString("0000-00-00 00:00:00");
-            } else if (isBooleanType(valueClass)) {
-                gen.writeBoolean(false);
-            } else if (isArrayType(valueClass)) {
-                gen.writeStartArray();
-                gen.writeEndArray();
-            } else {
-                gen.writeString("{}");
-            }
-        } else {
-            gen.writeNull();
-        }
+        return valueClass;
     }
 
     /**
@@ -91,6 +108,12 @@ public class JacksonNullSerializer extends JsonSerializer<Object> {
      */
     private boolean isArrayType(Class<?> valueClass) {
         return valueClass.isArray() || Collection.class.isAssignableFrom(valueClass);
+    }
+    /**
+     * 是否是 Map
+     */
+    private boolean isMapType(Class<?> valueClass) {
+        return Map.class.isAssignableFrom(valueClass);
     }
     private boolean isObjectType(Class<?> valueClass) {
         return Object.class.isAssignableFrom(valueClass);

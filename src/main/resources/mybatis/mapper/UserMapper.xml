@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.qin.dao.UserMapper">
-    <select id="findOneById" resultType="UserPO">
-        select * from user where id = #{id};
-    </select>
+<!--    <select id="findOneById" resultType="UserPO" parameterType="long">-->
+<!--        select * from user where id = #{id};-->
+<!--    </select>-->
 </mapper>

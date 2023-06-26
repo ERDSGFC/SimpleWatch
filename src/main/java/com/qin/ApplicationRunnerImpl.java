@@ -24,11 +24,15 @@ public class ApplicationRunnerImpl implements ApplicationRunner {
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
-    @Autowired
-    JacksonNullSerializer jacksonNullSerializer;
 
+    JacksonNullSerializer jacksonNullSerializer;
+    @Autowired
+    public void setJacksonNullSerializer(JacksonNullSerializer jacksonNullSerializer) {
+       this.jacksonNullSerializer = jacksonNullSerializer;
+    }
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        // 修改jackson 对空值的处理
         objectMapper.getSerializerProvider().setNullValueSerializer(jacksonNullSerializer);
     }
 }

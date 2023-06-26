@@ -68,13 +68,9 @@ public class JacksonConfig {
     }
 
     public static class LocalTimeDeserializer extends JsonDeserializer<LocalTime> {
-        //                ObjectCodec codec = jsonParser.getCodec();
-//                JsonNode tree = codec.readTree(jsonParser);
-//                String name = tree.get("name").textValue();
-//                int age = tree.get("age").intValue();
-//                return new MyObject(name, age);
         @Override
         public LocalTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+//            p.getCodec().readTree(p).get("fieldName");
             return LocalTime.parse(p.getText(), DateTimeFormatter.ofPattern(DEFAULT_TIME_FORMAT));
         }
     }

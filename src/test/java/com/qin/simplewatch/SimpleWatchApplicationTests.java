@@ -40,6 +40,7 @@ class SimpleWatchApplicationTests {
         System.out.println(test.toString());
 
         System.out.println(this.objectMapper.writeValueAsString(test));
+        System.out.println(this.objectMapper.writeValueAsString(new UserPO()));
     }
 }
 

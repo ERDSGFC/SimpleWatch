@@ -11,7 +11,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @Retention(RUNTIME)
 @Target({ FIELD })
-public @interface MyIgnore {
+public @interface IgnoreFiled {
     /**
      * 是否强制忽略
      */

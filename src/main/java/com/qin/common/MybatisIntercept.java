@@ -1,8 +1,11 @@
 package com.qin.common;
 
+import com.qin.common.dao.IgnoreFiled;
+import com.qin.utils.LocalDateTimeUtils;
 import lombok.extern.log4j.Log4j2;
-import org.apache.ibatis.cache.CacheKey;
 import org.apache.ibatis.executor.Executor;
+import org.apache.ibatis.executor.statement.BaseStatementHandler;
+import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
@@ -16,117 +19,92 @@ import org.apache.ibatis.session.RowBounds;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Objects;
 
-//@Component
 @Intercepts({
-//    @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
-    // 拦截不到这个有缓存的查询 , 不知道为什么
-//    @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
-        @Signature(type = Executor.class, method = "createCacheKey", args = {MappedStatement.class, Object.class, RowBounds.class, BoundSql.class }),
-        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class ,CacheKey.class, BoundSql.class}),
-        @Signature(type = Executor.class, method = "queryCursor", args = {MappedStatement.class, Object.class, RowBounds.class}),
-//    @Signature(type = Executor.class, method = "flushStatements", args = {}),
-//    @Signature(type = Executor.class, method = "commit", args = {boolean.class}),
-//    @Signature(type = Executor.class, method = "rollback", args = {boolean.class}),
-//    @Signature(type = Executor.class, method = "isCached", args = {MappedStatement.class, CacheKey.class }),
-//    @Signature(type = Executor.class, method = "clearLocalCache", args = {}),
-//    @Signature(type = Executor.class, method = "deferLoad", args = {MappedStatement.class, MetaObject.class, String.class, CacheKey.class, Class.class}),
-//    @Signature(type = Executor.class, method = "getTransaction", args = {}),
-//    @Signature(type = Executor.class, method = "close", args = {boolean.class}),
-//    @Signature(type = Executor.class, method = "isClosed", args = {}),
-//    @Signature(type = Executor.class, method = "setExecutorWrapper", args = {Executor.class}),
-//
-//    @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class}),
-//    @Signature(type = StatementHandler.class, method = "parameterize", args = {Statement.class }),
-//    @Signature(type = StatementHandler.class, method = "batch", args = {Statement.class }),
-//    @Signature(type = StatementHandler.class, method = "update", args = {Statement.class }),
-//    @Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class }),
-//    @Signature(type = StatementHandler.class, method = "queryCursor", args = {Statement.class }),
-//    @Signature(type = StatementHandler.class, method = "getBoundSql", args = {}),
-//    @Signature(type = StatementHandler.class, method = "getParameterHandler", args = {}),
-//
-//    @Signature(type = ParameterHandler.class, method = "getParameterObject", args = {}),
-//    @Signature(type = ParameterHandler.class, method = "setParameters", args = {PreparedStatement.class}),
-//
-//
-//    @Signature(type = ResultSetHandler.class, method = "handleResultSets", args = {Statement.class }),
-//    @Signature(type = ResultSetHandler.class, method = "handleCursorResultSets", args = {Statement.class }),
-//    @Signature(type = ResultSetHandler.class, method = "handleOutputParameters", args = {CallableStatement.class }),
-
+    @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
+    @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
 })
 @Log4j2
 public class MybatisIntercept implements Interceptor {
 
+    @SuppressWarnings("all")
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
         Object target= invocation.getTarget();
         log.info("invocation function name: " + invocation.getMethod().getName() +"===" + target.getClass());
         log.info(invocation.getArgs().length);
-        if ( target instanceof Executor) {
-            Object[] args = invocation.getArgs();
-            Object mappedStatement = args[0];
-            if (mappedStatement instanceof MappedStatement) {
-                BoundSql boundSql = ((MappedStatement) mappedStatement).getBoundSql(args[1]);
-                String mapperId = ((MappedStatement) mappedStatement).getId();
-                Class<?> mapper = Class.forName(mapperId.substring(0, mapperId.lastIndexOf(".") + 1));
-                final TableInfo annotation = mapper.getAnnotation(TableInfo.class);
-                changeSqlByTableInfo((MappedStatement) mappedStatement, annotation);
+        Object[] args = invocation.getArgs();
+        Object mappedStatement = args[0];
+        if (mappedStatement instanceof MappedStatement) { // 做表名和主键的处理
+            String mapperId = ((MappedStatement) mappedStatement).getId();
+            String mapperClassPath = mapperId.substring(0, mapperId.lastIndexOf("."));
+            Class<?> mapper = Class.forName(mapperClassPath);
+            final TableInfo annotation = mapper.getAnnotation(TableInfo.class);
+            final String tableName = annotation.value();
+            final String primaryKey = annotation.primaryKey();
+            Map parameterMap = (Map<String,Object>)args[1];
+            ((Map<String, Object>) parameterMap).put("_tableName_", tableName);
+            ((Map<String, Object>) parameterMap).put("_tablePrimaryKey_", primaryKey);
+            if (!primaryKey.equals("id")) ((MappedStatement) mappedStatement).getKeyProperties()[0] = "obj." + primaryKey; // 修改自增主键
+            // 下面 是会修改表的方法才执行的
+            if (invocation.getArgs().length == 2) {
+                if (mapperId.endsWith(".insertObj")) {
+                    String[] insertFields = annotation.fields();
+                    StringBuilder _insertField_ = new StringBuilder();
+                    extracted(insertFields, _insertField_);
+                    ((Map<String, Object>) parameterMap).put("_insertObjSql_", _insertField_.toString());
+                } else if (mapperId.endsWith(".updateChangeFieldsById")){
+                    StringBuilder _updateObj_ = new StringBuilder();
+                    Object newObj  = parameterMap.get("newObj");
+                    Object OldObj  = parameterMap.get("oldObj");
+                    _updateObj_.append("SET ");
+                    if (!changedFields(newObj, OldObj, _updateObj_)) return 0;
+                    ((Map<String, Object>) parameterMap).put("_updateObj_", _updateObj_.toString());
+                }
             }
-//            return invocation.getMethod().invoke(target, args);
-//        } else {
         }
 
         return invocation.proceed();
 
     }
 
-    private void changeSqlByTableInfo (MappedStatement mappedStatement, TableInfo annotation) throws IllegalAccessException {
-        if (annotation != null) {
-            final String tableName = annotation.value();
-            final String primaryKey = annotation.primaryKey();
-            final boolean timeFlag = annotation.timeFlag();
-            final String createdTimeField = annotation.createdTimeField();
-            final String updatedTimeField = annotation.updatedTimeField();
-            int table_index;
-            SqlSource sqlSource = mappedStatement.getSqlSource();
-            Class<? extends MappedStatement> mappedStatementClass = mappedStatement.getClass();
-            Field sqlSourceField = null;
-            for (Field field : mappedStatementClass.getFields()) {
-                if (field.getName().equals("sqlSource")) sqlSourceField = field;
-            }
-            if (sqlSourceField != null) {
-                sqlSourceField.setAccessible(true);
-//                BoundSql boundSql = sqlSource.getBoundSql();
-//                sqlSource.ge
-//                table_index = newSql.indexOf("=table=");
-//                int created_i = 0;
-//                final LocalDateTime now = LocalDateTime.now();
-//                if (table_index != -1 && timeFlag && SqlCommandType.INSERT.equals(sqlCommandType)) {
-//                    created_i = newSql.indexOf(")");
-//                    if (created_i != -1) newSql.replace(created_i, created_i + 1, ",`" + createdTimeField + "`, `"+updatedTimeField+"` )");
-//                    created_i = newSql.lastIndexOf("),(");
-//                    if(created_i == -1) newSql.replace(newSql.length() - 1, newSql.length(), ",'" +
-//                            LocalDateUtils.dateTimeFormatter.format(now) + "', '"+
-//                            LocalDateUtils.dateTimeFormatter.format(now) + "' )");
-//                } else if(table_index != -1 && timeFlag && SqlCommandType.UPDATE.equals(sqlCommandType)) {
-//                    final String updatedTime = "SET `"+updatedTimeField+"` = '"+ LocalDateUtils.dateTimeFormatter.format(now) + "',";
-//                    final int i = newSql.indexOf(updatedTimeField);
-//                    if (i < 0 || i > newSql.indexOf("WHERE")) {
-//                        final int updated_i = newSql.indexOf("SET");
-//                        if(updated_i != -1) newSql.replace(updated_i,updated_i + "set".length(), updatedTime);
-//                    }
-//                }
-//
-//                if(table_index != -1) newSql.replace(table_index,table_index + "=table=".length(), tableName);
-//
-//                if (created_i == -1) {
-//                    sqlField.set(boundSql, newSql.toString().replaceAll("=id=", primaryKey).replaceAll("\\),\\(",
-//                            ",'" + LocalDateUtils.dateTimeFormatter.format(now) + "', '"+ LocalDateUtils.dateTimeFormatter.format(now) + "' ),("));
-//                } else {
-//                    sqlField.set(boundSql, newSql.toString().replaceAll("=id=", primaryKey));
-//                }
-            }
+    private static void extracted(String[] insertFields, StringBuilder _insertField_) {
+        StringBuilder _insertValue_ = new StringBuilder();
+        _insertField_.append("(");
+        _insertValue_.append("(");
+        int index = insertFields.length - 1;
+        for (int i = 0; i < index; i++) {
+            _insertField_.append("`").append(camelToUnderline(insertFields[i])).append("`,");
+            _insertValue_.append("#{obj.").append(insertFields[i]).append("},");
         }
+        _insertField_.append("`").append(camelToUnderline(insertFields[index])).append("`");
+        _insertValue_.append("#{obj.").append(insertFields[index]).append("}");
+        _insertField_.append(")");
+        _insertValue_.append(")");
+        _insertField_.append(" VALUE ").append(_insertValue_);
+    }
+
+    private boolean changedFields(Object newObj, Object oldObj, StringBuilder updateObj) throws IllegalAccessException {
+            Class<?> cls = newObj.getClass();
+            boolean flag = false;
+            Field[] fields = cls.getDeclaredFields();
+            for (Field f : fields) {
+                f.setAccessible(true);
+                Object n = f.get(newObj);
+                log.info(n);
+                log.info(f.get(oldObj));
+                if(!Objects.equals(n,f.get(oldObj))) {
+                    log.info(n);
+                    log.info(n);
+//                if (!n.equals(f.get(oldObj))) {
+                    updateObj.append("`").append(camelToUnderline(f.getName())).append("` = #{newObj.").append(f.getName()).append("} ,");
+                    flag = true;
+                }
+            }
+            updateObj.deleteCharAt(updateObj.length()-1);
+            return flag;
     }
 
 //    @Override
@@ -136,28 +114,20 @@ public class MybatisIntercept implements Interceptor {
 //        }
 //        return target;
 //    }
-
-
-//    public static Map<String, Object> reflect(Object obj) throws IllegalAccessException {
-//        HashMap<String, Object> hashMap = new HashMap<>();
-//        Class<?> cls = obj.getClass();
-//        Field[] fields = cls.getDeclaredFields();
-//        for (Field f : fields) {
-//            f.setAccessible(true);
-//            MyIgnore ignore = f.getAnnotation(MyIgnore.class);
-//            Object o = f.get(obj);
-//            if(ignore == null ||
-//                    (!ignore.value() &&
-//                            (   (!(o instanceof Number) && o != null) ||
-//                                    (o != null && ((Number)o).intValue() != 0)
-//                            )
-//                    )
-//            ) {
-//                hashMap.put(Common.camelToUnderline(f.getName()), o);
-//            }
-//
-//        }
-//        return  hashMap;
-//    }
+    public static String camelToUnderline(String str) {
+        if (str == null) return "";
+        int len = str.length();
+        StringBuilder underline = new StringBuilder(len);
+        underline.append(str.substring(0, 1).toLowerCase());
+        for (int i = 1; i < len; i++) {
+            char c = str.charAt(i);
+            if (Character.isUpperCase(c)) {
+                underline.append("_").append(Character.toLowerCase(c));
+            } else {
+                underline.append(c);
+            }
+        }
+        return underline.toString();
+    }
 
 }

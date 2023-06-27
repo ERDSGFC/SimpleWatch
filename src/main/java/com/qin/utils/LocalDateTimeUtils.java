@@ -7,12 +7,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-public class MyUtils {
+public class LocalDateTimeUtils {
 
     /**
      * 不需要实例化
      */
-    private MyUtils() {}
+    private LocalDateTimeUtils() {}
 
     public static final DateTimeFormatter dateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -24,7 +24,7 @@ public class MyUtils {
     }
 
     public static long getTimestamp(final LocalDateTime localDateTime) {
-        return localDateTime.atZone(MyUtils.zoneId).toEpochSecond();
+        return localDateTime.atZone(LocalDateTimeUtils.zoneId).toEpochSecond();
     }
 
     public static long getTimestampMilli() {
@@ -32,24 +32,24 @@ public class MyUtils {
     }
 
     public static long getTimestampMilli(final LocalDateTime localDateTime) {
-        return localDateTime.atZone(MyUtils.zoneId).toInstant().toEpochMilli();
+        return localDateTime.atZone(LocalDateTimeUtils.zoneId).toInstant().toEpochMilli();
     }
 
     @NonNull
     public static LocalDateTime getLocalDateTime(final long timestamp) {
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), MyUtils.zoneId);
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(timestamp), LocalDateTimeUtils.zoneId);
     }
 
     @NonNull
     public static LocalDateTime getLocalDateTimeOfMilli(final long timestamp) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), MyUtils.zoneId);
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), LocalDateTimeUtils.zoneId);
     }
 
     public static String localDateTimeFormatter(final LocalDateTime localDateTime) {
-        return localDateTime.format(MyUtils.dateTimeFormatter);
+        return localDateTime.format(LocalDateTimeUtils.dateTimeFormatter);
     }
 
     public static LocalDateTime getLocalDateTime(final String dataTime) {
-        return LocalDateTime.parse(dataTime, MyUtils.dateTimeFormatter);
+        return LocalDateTime.parse(dataTime, LocalDateTimeUtils.dateTimeFormatter);
     }
 }

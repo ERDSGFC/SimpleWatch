@@ -1,6 +1,8 @@
 package com.qin;
 
-import com.qin.utils.SpringContextUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qin.utils.JsonUtils;
+import com.qin.utils.SpringContextUtils;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,7 +25,8 @@ public class Application {
         TimeZone.setDefault(TimeZone.getTimeZone("Asia/Shanghai")); //America/New_York
         SpringApplication application = new SpringApplication(Application.class);
         ConfigurableApplicationContext context = application.run(args);
-        SpringContextUtil.setContext(context);
+        SpringContextUtils.setContext(context);
+//        JsonUtils.setMapper(SpringContextUtils.getContext().getBean(ObjectMapper.class));
     }
 
 }

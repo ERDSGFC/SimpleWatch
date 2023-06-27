@@ -4,11 +4,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.Objects;
 
-public class SpringContextUtil {
+public class SpringContextUtils {
 
     private static ConfigurableApplicationContext context;
 
-    private SpringContextUtil(){}
+    private SpringContextUtils(){}
 
     /**
      * 设置 spring boot 容器
@@ -16,7 +16,7 @@ public class SpringContextUtil {
      * @param run
      */
     public static void setContext(final ConfigurableApplicationContext run) {
-        if (Objects.isNull(run)) SpringContextUtil.context = run;
+        if (Objects.isNull(run)) SpringContextUtils.context = run;
     }
 
     /**
@@ -24,7 +24,7 @@ public class SpringContextUtil {
      * @return the context
      */
     public static ConfigurableApplicationContext getContext() {
-        return SpringContextUtil.context;
+        return SpringContextUtils.context;
     }
 
     /**
@@ -33,7 +33,7 @@ public class SpringContextUtil {
      * @return
      */
     public <T> T getBean(final Class<T> beanType) {
-       return SpringContextUtil.context.getBean(beanType);
+       return SpringContextUtils.context.getBean(beanType);
     }
 
     /**
@@ -42,7 +42,7 @@ public class SpringContextUtil {
      * @return
      */
     public <T> T getBean(final String name, final Class<T> beanType) {
-       return SpringContextUtil.context.getBean(name, beanType);
+       return SpringContextUtils.context.getBean(name, beanType);
     }
 
 }

@@ -16,6 +16,11 @@ public @interface TableInfo {
     String value();
 
     /**
+     * 插入时的字段
+     * @return insert sql fields
+     */
+    String[] fields();
+    /**
      * 主键 名称
      * @return table primary key name
      */

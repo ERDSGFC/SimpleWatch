@@ -1,5 +1,6 @@
 package com.qin.pojo.po;
 
+import com.qin.common.BasePO;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,9 +21,10 @@ import java.io.Serializable;
 @Getter
 @EqualsAndHashCode
 @ToString
-public class UserPO implements Serializable {
+public class UserPO extends BasePO implements Serializable {
     @Serial
     private static final long serialVersionUID = -10868950213536710L;
+
     /**
      * 主键id
      */

@@ -50,4 +50,11 @@ public class Mybatis {
         userMapper.updateChangeFieldsById(newUser, userPO, 8);
 
     }
+
+    @Test
+    void selectTest() {
+        UserPO user = userMapper.findOneById(8);
+        System.out.println(user);
+//        user.getDeletedTime()
+    }
 }

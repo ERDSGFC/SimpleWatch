@@ -17,11 +17,31 @@ public interface BaseMapper<T> {
     /**
      * 数据库表名占位符符
      */
-    String SYMBOL_TABLE = "${_tableName_}";
+    String SYMBOL_TABLE = "`${_TABLE_NAME_}`";
     /**
      * 数据库表主键占位符符
      */
-    String PRIMARY_KEY = "${_tablePrimaryKey_}";
+    String PRIMARY_KEY = "`${_TABlE_PRIMARY_KEY_}`";
+    /**
+     * 查询字段
+     */
+    String SELECT_FIELDS = "${_SELECT_FIELDS_}";
+    /**
+     * 查询没有被软删除的 delete
+     */
+    String NO_DELETE = "${_NO_DELETE_}";
+    /**
+     * 插入表字段
+     */
+    String INSERT_OBJ = "${_INSERT_FIELDS_SQL_}";
+    /**
+     * 修改表数据字段
+     */
+    String UPDATE_OBJ = "${_UPDATE_OBJ_}";
+    /**
+     * 删除表数据
+     */
+    String DELETE_FLAG = "${_DELETE_FLAG_}";
     /**
      * 脚本开始标签
      */
@@ -48,12 +68,13 @@ public interface BaseMapper<T> {
                    "</otherwise>" +
                    "</choose>" +
                    "</foreach>" +
+                   NO_DELETE+
                    "</where>";
     /**
      * 查询语句的查询列
      */
     String SELECT_COLUMN = "<choose>" +
-                           "<when test=\"columns.length == 0\"> * </when>" +
+                           "<when test=\"columns.length == 0\"> "+SELECT_FIELDS+" </when>" +
                            "<otherwise> " +
                            "<foreach item=\"item\" collection=\"columns\" separator=\",\" >" +
                            " `${item}` " +
@@ -87,11 +108,8 @@ public interface BaseMapper<T> {
      * @param where 查询条件
      * @return true 存在 false 不存在
      */
-    @Select(value =
-        SCRIPT_START+"select if(exists((select * from `"+SYMBOL_TABLE+"` "+WHERE+" limit 1)), 1, 0) as flag"+SCRIPT_END
-    )
-    boolean selectExists(@Param("whereCondition") List<Object> where);
-    
+    @Select(SCRIPT_START+"select if(exists((select "+PRIMARY_KEY+" from "+SYMBOL_TABLE+WHERE+" limit 1)), 1, 0) as flag"+SCRIPT_END)
+    boolean selectExists(@Param("whereCondition") List<DynCondition> where);
     /**
      * select IF(IFNULL((select `id` FROM `user` where code  = "CodeNumber"), 52) = 52, 1,0) as flag
      * select IF(IFNULL((select `id` FROM `user` where user_name  = "小黑"), 1) = 1, 1,0) as flag
@@ -101,79 +119,72 @@ public interface BaseMapper<T> {
      * @param primaryKey 主键的值
      * @return boolean true 表示唯一 false 不唯一
      */
-    @Select(value = SCRIPT_START +
-                    "select IF(IFNULL((select `"+PRIMARY_KEY+"` FROM `"+SYMBOL_TABLE+"` " +
-                    WHERE + "), #{primaryKey}) = #{primaryKey}, 1,0) as flag" +
-                    SCRIPT_END
-    )
-    @Options()
+    @Select(SCRIPT_START + "select IF(IFNULL((select "+PRIMARY_KEY+" FROM "+SYMBOL_TABLE+WHERE+"), #{primaryKey}) = #{primaryKey}, 1,0) as flag" + SCRIPT_END)
     boolean selectUnique(@Param("whereCondition") List<DynCondition> where, @Param("primaryKey") long primaryKey);
-
+    // 根据主键查询一条
+    @Select("select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+" where "+PRIMARY_KEY+" = #{primaryKey} "+NO_DELETE+" limit 1")
+    T findOneById(@Param("primaryKey") long primaryKey);
+    // 根据主键查询一条
+    @Select(SCRIPT_START+"select "+SELECT_COLUMN+" from "+SYMBOL_TABLE+" where "+PRIMARY_KEY+" = #{primaryKey} "+NO_DELETE+" limit 1" + SCRIPT_END)
+    HashMap<String, Object> findOneByIdFields(@Param("primaryKey") long primaryKey, @Param("columns") String... columns);
+    //  根据条件选择性的查询 一条数据
+    @Select(SCRIPT_START+"select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+WHERE+" limit 1"+ SCRIPT_END)
+    T findOneSelective(@Param("whereCondition") List<DynCondition> whereFast);
+    //  根据条件和排序选择性的查询 第一条数据
+    @Select(SCRIPT_START + "select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+WHERE+" order by"+ORDER_BY+" limit 1"+ SCRIPT_END)
+    T findOneSelectiveOrder(@Param("whereCondition")List<DynCondition> conditions, @Param("order") List<OrderBy> order);
+    // 查询全部
+    @Select(SCRIPT_START+ "select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+" "+NO_DELETE+SCRIPT_END)
+    List<T> findAll();
+    // 查询全部 排序
+    @Select(SCRIPT_START+ "select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+" "+NO_DELETE+" order by "+ORDER_BY+SCRIPT_END)
+    List<T> findAllOrder(@Param("order") List<OrderBy> order);
+    //  根据条件选择性的查询 全部数据
+    @Select(SCRIPT_START+"select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+WHERE+SCRIPT_END)
+    List<T> findSelective(@Param("whereCondition") List<DynCondition> conditions);
+    //  根据条件和排序选择性的查询 全部数据
+    @Select(SCRIPT_START+"select "+SELECT_FIELDS+" from "+SYMBOL_TABLE+WHERE+" order by"+ORDER_BY+SCRIPT_END)
+    List<T> findSelectiveOrder(@Param("whereCondition") List<DynCondition> conditions, @Param("order") List<OrderBy> order);
+    // 根据primaryKey 修改
+    @Update(SCRIPT_START+"UPDATE "+SYMBOL_TABLE+" "+UPDATE_OBJ+" WHERE "+PRIMARY_KEY+"=#{primaryKey} "+NO_DELETE+SCRIPT_END)
+    boolean updateChangeFieldsById(@Param("newObj") T newObj,@Param("oldObj") T oldObj, @Param("primaryKey") long primaryKey);
+    @Update(SCRIPT_START+"UPDATE "+SYMBOL_TABLE+" "+UPDATE_OBJ+" WHERE "+PRIMARY_KEY+"=#{primaryKey} "+NO_DELETE+SCRIPT_END)
+    boolean updateAllFieldsById(@Param("newObj") T newObj, @Param("primaryKey") long primaryKey);
+    // 根据primaryKey 修改
+    @Update(SCRIPT_START+"UPDATE "+SYMBOL_TABLE+" "+UPDATE_SET+" WHERE "+PRIMARY_KEY+"=#{primaryKey} "+NO_DELETE+SCRIPT_END)
+    boolean updateById(@Param("set") Map<String, Object> set, @Param("primaryKey") long primaryKey);
+    // 根据 条件修改
+    @Update(SCRIPT_START+"UPDATE "+SYMBOL_TABLE+" "+UPDATE_SET+WHERE+NO_DELETE+SCRIPT_END)
+    long updateSelective(@Param("set") Map<String, Object> set, @Param("whereCondition") List<DynCondition> whereFast);
+    // 根据primaryKey 删除
+    @Delete(DELETE_FLAG+" WHERE "+PRIMARY_KEY+" = #{primaryKey}")
+    boolean delById(@Param("primaryKey") long primaryKey);
+    // 根据参数来 变化 删除
+    @Delete(SCRIPT_START+DELETE_FLAG+" " + WHERE + SCRIPT_END)
+    long delSelective(@Param("whereCondition") List<DynCondition> where);
     /**
      * 插入一条数据
      * @param obj 查询条件
      * @return true 存在 false 不存在
      */
-    @Insert(value = SCRIPT_START + "INSERT INTO `"+SYMBOL_TABLE+"` ${_insertObjSql_}" + SCRIPT_END)
+    @Insert(SCRIPT_START+"INSERT INTO "+SYMBOL_TABLE+" "+INSERT_OBJ+SCRIPT_END)
     @Options(useGeneratedKeys = true, keyProperty = "obj.id")
     boolean insertObj(@Param("obj") T obj);
-    /**
-     * 通过Map 插入一条数据
-     * @param record 插入的记录
-     * @return 返回是否插入成功 true 成功 false 失败
-     */
-    @Insert(value = SCRIPT_START + "INSERT INTO `"+SYMBOL_TABLE+"` " +
-                    "<foreach item=\"item\" index=\"index\" collection=\"record\" open=\"(\" separator=\",\" close=\")\">" +
-                    " `${index}` " +
-                    "</foreach>" +
-                    "VALUE" +
-                    "<foreach item=\"item\" index=\"index\" collection=\"record\" open=\"(\" separator=\",\" close=\")\">" +
-                    " #{item} " +
-                    "</foreach>" +
-                    SCRIPT_END
-    )
-    @Options(useGeneratedKeys = true, keyProperty = "record.id")
-    boolean insertOneRecord(@Param("record") Map<String, Object> record);
-    // 根据主键查询一条
-    @Select("select * from `"+SYMBOL_TABLE+"` where "+PRIMARY_KEY+" = #{primaryKey} limit 1")
-    T findOneById(@Param("primaryKey") long primaryKey);
-
-    // 根据主键查询一条
-    @Select(value= SCRIPT_START + "select "+SELECT_COLUMN+" from `"+SYMBOL_TABLE+"` where "+PRIMARY_KEY+" = #{primaryKey} limit 1" + SCRIPT_END)
-    HashMap<String, Object> findOneMapById(@Param("primaryKey") long primaryKey, @Param("columns") String... columns);
-    // 查询全部
-    @Select("select * from `"+SYMBOL_TABLE+"`")
-    ArrayList<T> findAll();
-    // 查询全部 排序
-    @Select(value = SCRIPT_START+ "select * from `"+SYMBOL_TABLE+"` order by " + ORDER_BY + SCRIPT_END)
-    ArrayList<T> findAllOrder(@Param("order") List<OrderBy> order);
-    //  根据条件和排序选择性的查询 第一条数据
-    @Select(value = SCRIPT_START + "select * from `"+SYMBOL_TABLE+"`" + WHERE+ " order by " + ORDER_BY+ " limit 1"+ SCRIPT_END)
-    T findOneSelectiveOrder(@Param("whereCondition")List<DynCondition> conditions, @Param("order") List<OrderBy> order);
-    //  根据条件和排序选择性的查询 全部数据
-    @Select(value = SCRIPT_START + "select * from `"+SYMBOL_TABLE+"`" + WHERE+ " order by " + ORDER_BY + SCRIPT_END)
-    ArrayList<T> findSelectiveOrder(@Param("whereCondition") List<DynCondition> whereFast, @Param("order") List<OrderBy> order);
-    //  根据条件选择性的查询 全部数据
-    @Select(value = {SCRIPT_START + "select * from `"+SYMBOL_TABLE+"`" + WHERE+ SCRIPT_END})
-    ArrayList<T> findSelective(@Param("whereCondition") List<DynCondition> whereFast);
-    //  根据条件选择性的查询 一条数据
-    @Select(value = {SCRIPT_START + "select * from `"+SYMBOL_TABLE+"`" + WHERE+ " limit 1"+ SCRIPT_END})
-    T findOneSelective(@Param("whereCondition") List<DynCondition> whereFast);
-    // 根据primaryKey 修改
-    @Update(value = SCRIPT_START + "UPDATE `"+SYMBOL_TABLE+"` ${_updateObj_}" + "WHERE "+PRIMARY_KEY+"=#{primaryKey}" +SCRIPT_END)
-    boolean updateChangeFieldsById(@Param("newObj") T newObj,@Param("oldObj") T oldObj, @Param("primaryKey") long primaryKey);
-    @Update(value = SCRIPT_START + "UPDATE `"+SYMBOL_TABLE+"` ${_updateObj_}" + "WHERE "+PRIMARY_KEY+"=#{primaryKey}" +SCRIPT_END)
-    boolean updateAllFieldsById(@Param("newObj") T newObj, @Param("primaryKey") long primaryKey);
-    // 根据primaryKey 修改
-    @Update(value = SCRIPT_START + "UPDATE `"+SYMBOL_TABLE+"`" + UPDATE_SET + "WHERE "+PRIMARY_KEY+"=#{primaryKey}" +SCRIPT_END)
-    boolean updateById(@Param("set") Map<String, Object> set, @Param("primaryKey") long primaryKey);
-    // 根据 条件修改
-    @Update(value = SCRIPT_START + "UPDATE `"+SYMBOL_TABLE+"`" + UPDATE_SET + WHERE + SCRIPT_END)
-    long updateSelective(@Param("set") Map<String, Object> set, @Param("whereCondition") @NotNull List<DynCondition> whereFast);
-    // 根据primaryKey 删除
-    @Delete(value = "DELETE FROM `"+SYMBOL_TABLE+"` WHERE "+PRIMARY_KEY+" = #{primaryKey}")
-    boolean delById(@Param("primaryKey") long primaryKey);
-    // 根据参数来 变化 删除
-    @Delete(value = SCRIPT_START + "DELETE FROM `"+SYMBOL_TABLE+"`" + WHERE + SCRIPT_END)
-    long delSelective(@Param("whereCondition") @NotNull List<DynCondition> where);
+//    /**
+//     * 通过Map 插入一条数据
+//     * @param record 插入的记录
+//     * @return 返回是否插入成功 true 成功 false 失败
+//     */
+//    @Insert(SCRIPT_START+"INSERT INTO "+SYMBOL_TABLE+" "+
+//            "<foreach item=\"item\" index=\"index\" collection=\"record\" open=\"(\" separator=\",\" close=\")\">" +
+//            " `${index}` " +
+//            "</foreach>" +
+//            "VALUE" +
+//            "<foreach item=\"item\" index=\"index\" collection=\"record\" open=\"(\" separator=\",\" close=\")\">" +
+//            " #{item} " +
+//            "</foreach>" +
+//            SCRIPT_END
+//    )
+//    @Options(useGeneratedKeys = true, keyProperty = "record.id")
+//    boolean insertOneRecord(@Param("record") Map<String, Object> record);
 }

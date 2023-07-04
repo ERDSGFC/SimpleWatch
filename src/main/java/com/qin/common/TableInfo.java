@@ -20,7 +20,7 @@ public @interface TableInfo {
      */
     String[] fields();
     /**
-     * 主键 名称
+     * 主键 名称 是实体类对应的名称
      * @return table primary key name
      */
     String primaryKey() default "id";
@@ -43,19 +43,19 @@ public @interface TableInfo {
      * 数据逻辑删除是否开启
      * @return start logic delete
      */
-    boolean LogicDeleted() default false;
+    boolean logicDeleted() default false;
     /**
      * 正常数据
      * @return normal data
      */
-    long Normal() default 1;
+    String normal() default "1";
     /**
      * 已经删除的数据
      * @return deleted data
      */
-    long deleted() default 0;
+    String deleted() default "0";
     /**
-     * 数据逻辑删除标记字段 默认就用删除时间来判断
+     * 数据逻辑删除标记字段
      * @return data delete flag
      */
     String deletedField() default "deleted_flag";
@@ -64,4 +64,10 @@ public @interface TableInfo {
      * @return data delete time
      */
     String deletedTimeField() default "deleted_time";
+    /**
+     * 数据逻辑删除默认时间
+     * @return data delete time
+     */
+    String deletedDefaultTime() default "1970-01-01 00:00:00";
+
 }
